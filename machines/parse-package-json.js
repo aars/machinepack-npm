@@ -26,6 +26,7 @@ module.exports = {
         "description": "asg",
         "version": "0.1.1",
         "keywords": ["machine"],
+        "private": false,
         "latestVersionPublishedAt": "2015-01-19T22:26:54.588Z",
         "npmUrl": "http://npmjs.org/package/machinepack-foo",
         "sourceUrl": "https://github.com/baz/machinepack-foo",
@@ -40,6 +41,9 @@ module.exports = {
           "name": "Substack",
           "email": "substack@substack.com"
         }],
+        "publishConfig": {},
+        "registry": "http://npmjs.org",
+        "usesPublicRegistry": true,
         "rawJson": "{...package.json data as a JSON string...}"
       }
 
@@ -59,6 +63,7 @@ module.exports = {
 
     var moduleMetadata = {};
     var _data;
+    var publicRegistry = 'http://npmjs.org';
 
     try {
       _data = JSON.parse(inputs.json);
@@ -81,6 +86,12 @@ module.exports = {
       moduleMetadata.latestVersionPublishedAt = _data.time ? _data.time.modified : '';
       moduleMetadata.author = _data.author;
       moduleMetadata.license = _data.license;
+      moduleMetadata.private = _data.private;
+      moduleMetadata.publishConfig = _data.publishConfig;
+      moduleMetadata.registry = (function (publishConfig) {
+        return publishConfig && publishConfig.registry || publicRegistry;
+      })(moduleMetadata.publishConfig);
+      moduleMetadata.usesPublicRegistry = (moduleMetadata.registry === publicRegistry);
 
       // Determine where to find metadata about the latest version
       var latestVersion = _data.versions ? _data.versions[moduleMetadata.version] : _data;
@@ -94,8 +105,11 @@ module.exports = {
         return memo;
       }, []);
 
-      // Build an NPM url for convenience.
-      moduleMetadata.npmUrl = util.format('http://npmjs.org/package/%s', moduleMetadata.name);
+      // Build an NPM/registry url for convenience.
+      moduleMetadata.npmUrl = util.format('%s/package/%s',
+        moduleMetadata.registry.replace(/\/$/, ''), // No trailing slash
+        moduleMetadata.name
+      );
 
       // Build the source code URL, if applicable.
       moduleMetadata.sourceUrl = (function extractRepoUrl (){
